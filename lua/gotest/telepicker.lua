@@ -4,7 +4,7 @@ local conf = require("telescope.config").values
 local actions = require "telescope.actions"
 local action_state = require "telescope.actions.state"
 local action_utils = require "telescope.actions.utils"
-local gotest = require "go2one.gotest"
+local gotest = require "gotest"
 
 local function on_entry()
   local gt = gotest:new()
@@ -64,10 +64,10 @@ end
 local function get_root_dir()
   local id, client = next(vim.lsp.buf_get_clients())
   if id == nil then
-    error({error_msg="lsp client not attached"})
+    error({ error_msg = "lsp client not attached" })
   end
   if not client.config.root_dir then
-    error({error_msg="lsp root_dir not defined"})
+    error({ error_msg = "lsp root_dir not defined" })
   end
   return client.config.root_dir
 end
@@ -106,7 +106,6 @@ local run_test = function(opts)
     end,
   })
   p:find()
-
 end
 
 gotest.telescope.run_nearest()
