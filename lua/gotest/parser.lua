@@ -1,8 +1,13 @@
+---@class Gotest
+---@field opts Options
+---@field results ExecutionResult
 local gotest = {}
 gotest.__index = gotest
 
+---@param opts Options
+---@return Options
 local function handle_opts(opts)
-  local options =  {
+  local options = {
     icon_test_fail = '🔴',
     icon_test_run  = '🟡',
     icon_test_pass = '🟢',
@@ -16,6 +21,8 @@ local function handle_opts(opts)
   return options
 end
 
+---@param opts? Options
+---@return Gotest
 function gotest:new(opts)
   local options = handle_opts(vim.deepcopy(opts))
   local o = {
@@ -26,22 +33,38 @@ function gotest:new(opts)
   return o
 end
 
+---Return the unicode character representing the icon for the given status.
+---Will return empty string if is not defined.
+---@param status STATUS
+---@return string
 function gotest:status_icon(status)
   if status then
-    if status == "pause" then return self.opts.icon_test_run
-    elseif status == "cont" then return self.opts.icon_test_run
-    elseif status == "run" then return self.opts.icon_test_run
-    elseif status == "fail" then return self.opts.icon_test_fail
-    elseif status == "pass" then return self.opts.icon_test_pass
-    elseif status == "skip" then return self.opts.icon_test_skip
+    if status == "pause" then
+      return self.opts.icon_test_run
+    elseif status == "cont" then
+      return self.opts.icon_test_run
+    elseif status == "run" then
+      return self.opts.icon_test_run
+    elseif status == "fail" then
+      return self.opts.icon_test_fail
+    elseif status == "pass" then
+      return self.opts.icon_test_pass
+    elseif status == "skip" then
+      return self.opts.icon_test_skip
     end
   end
+  return ""
 end
 
-function gotest:clean_output(out)
-  if not string.find(out, "%s*===.+") and not string.find(out, "%s*%-%-%-.+") then
-    local file, line = string.match(out, "%s*(.+):(%d+):%s.+")
-    return file, line, out
+---Will try to extract the file and the line from the given output
+---@param output string
+---@return string # the filename
+---@return string # the line number
+---@return string # the output
+function gotest:clean_output(output)
+  if not string.find(output, "%s*===.+") and not string.find(output, "%s*%-%-%-.+") then
+    local file, line = string.match(output, "%s*(.+):(%d+):%s.+")
+    return file, line, output
   end
 end
 
@@ -63,8 +86,8 @@ function gotest:handle_output(test_event)
     self.results[pkg].elapsed = test_event.Elapsed
   end
   if test_event.Action ~= 'output' and
-    test_event.Action ~= 'bench' and
-    self.results[pkg].status ~= 'fail' then
+      test_event.Action ~= 'bench' and
+      self.results[pkg].status ~= 'fail' then
     self.results[pkg].status = test_event.Action
   end
   local test
@@ -134,7 +157,6 @@ function gotest:handle_output(test_event)
     }
   end
   return result
-
 end
 
 return gotest
