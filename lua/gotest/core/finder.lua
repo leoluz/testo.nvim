@@ -138,7 +138,7 @@ local function get_package_name()
   return "./" .. test_dir
 end
 
-M.find_closest_test = function()
+M.closest_test = function()
   local package_name = get_package_name()
   local test_case = get_closest_test()
   local test_scope

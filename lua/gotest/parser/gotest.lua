@@ -1,3 +1,5 @@
+---This parser is responsible for handling gotest json output
+---and populating the ExecutionResult accordingly.
 ---@class Gotest
 ---@field opts Options
 ---@field results ExecutionResult

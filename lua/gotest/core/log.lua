@@ -3,7 +3,7 @@ local M = {}
 local function notify(opts, level, msg, ...)
   local message
   if ... then
-    message = string.format(msg, unpack({...}))
+    message = string.format(msg, unpack({ ... }))
   else
     message = msg
   end

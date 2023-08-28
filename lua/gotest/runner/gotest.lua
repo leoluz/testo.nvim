@@ -1,9 +1,8 @@
 local job = require "plenary.job"
-local go = require "gotest.go"
-local log = require "gotest.log"
-local parser = require "gotest.parser"
-local config = require "gotest.config"
-local M = {}
+local log = require "gotest.core.log"
+local parser = require "gotest.parser.gotest"
+local config = require "gotest.core.config"
+local minimalist = require "gotest.view.minimalist"
 local runner = {}
 runner.__index = runner
 
@@ -74,48 +73,6 @@ function runner:on_stderr()
   end
 end
 
-local function notify(opts, results)
-  local pkg_total = 0
-  local pkg_error = 0
-  local pkg_success = 0
-  local test_total = 0
-  local test_error = 0
-  local test_success = 0
-  local output = {}
-  for _, result in pairs(results) do
-    if result.type == "package" then
-      pkg_total = pkg_total + 1
-      if result.status == "pass" then
-        pkg_success = pkg_success + 1
-      elseif result.status == "fail" then
-        pkg_error = pkg_error + 1
-      end
-    elseif result.type == "testcase" then
-      test_total = test_total + 1
-      if result.status == "pass" then
-        test_success = test_success + 1
-      elseif result.status == "fail" then
-        test_error = test_error + 1
-      end
-    end
-    if result.output then
-      for _, o in ipairs(result.output) do
-        table.insert(output, o)
-      end
-    end
-  end
-  vim.schedule(
-    function()
-      if test_error > 0 and output then
-        for _, out in ipairs(output) do
-          -- This should be printed in a quickfix/floating window
-          print(out)
-        end
-      end
-      log.info(opts, "tests: total %s success %s fail %s", test_total, test_success, test_error)
-    end)
-end
-
 function runner:on_exit(opts)
   return function(_, _, signal)
     if signal ~= 0 then
@@ -127,7 +84,7 @@ function runner:on_exit(opts)
     end
     local handler = opts.results_handler
     if handler == "notification" then
-      notify(opts, self.results)
+      minimalist.display(opts, self.results)
     elseif handler == "telescope" then
       local telescope = require 'go2one.gotest.telescope'
       vim.schedule(
@@ -145,18 +102,46 @@ function runner:on_exit(opts)
   end
 end
 
-function M.test_nearest(opts)
+local function get_root_dir()
+  local id, client = next(vim.lsp.buf_get_clients())
+  if id == nil then
+    error({ error_msg = "lsp client not attached" })
+  end
+  if not client.config.root_dir then
+    error({ error_msg = "lsp root_dir not defined" })
+  end
+  return client.config.root_dir
+end
+
+
+local function test_args(pkg, test)
+  local args = { "test" }
+  if pkg then
+    table.insert(args, pkg)
+  else
+    table.insert(args, test.package)
+    if test.scope == "testcase" then
+      table.insert(args, "-test.run")
+      table.insert(args, "^" .. test.name .. "$")
+    end
+  end
+  table.insert(args, "-count=1")
+  table.insert(args, "-json")
+  return args
+end
+
+
+function runner:run(test, opts)
   local cfg = vim.tbl_deep_extend("force", config.get(), opts or {})
 
-  local root_dir = go.get_root_dir()
+  local root_dir = get_root_dir()
   cfg.cwd = root_dir
 
-  local test = go.find_closest_test()
-  local test_args = go.test_args(nil, test)
+  local args = test_args(nil, test)
   local r = runner:new(cfg, test)
   local j = job:new({
     command = 'go',
-    args = test_args,
+    args = args,
     cwd = cfg.cwd,
     on_start = r:on_start(),
     on_stdout = r:on_stdout(),
@@ -171,4 +156,4 @@ function M.test_nearest(opts)
   }
 end
 
-return M
+return runner
