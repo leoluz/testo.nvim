@@ -4,7 +4,7 @@ local conf = require("telescope.config").values
 local actions = require "telescope.actions"
 local action_state = require "telescope.actions.state"
 local action_utils = require "telescope.actions.utils"
-local gotest = require "gotest"
+local gotest = require "testo.parser.gotest"
 
 local function on_entry()
   local gt = gotest:new()

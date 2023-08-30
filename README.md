@@ -1,2 +1,2 @@
-# gotest.nvim
-Go test powered by Neovim
+# testo.nvim
+Test executor powered by Neovim

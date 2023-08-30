@@ -5,8 +5,8 @@ local actions = require "telescope.actions"
 local action_state = require "telescope.actions.state"
 local action_utils = require "telescope.actions.utils"
 local previewers = require "telescope.previewers"
-local parser = require "gotest.parser"
-local go = require "gotest.go"
+local parser = require "testo.parser"
+local go = require "testo.core.finder"
 local M = {}
 
 local function skip_result(result)

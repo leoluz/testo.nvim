@@ -1,8 +1,8 @@
 local job = require "plenary.job"
-local log = require "gotest.core.log"
-local parser = require "gotest.parser.gotest"
-local config = require "gotest.core.config"
-local minimalist = require "gotest.view.minimalist"
+local log = require "testo.core.log"
+local parser = require "testo.parser.gotest"
+local config = require "testo.core.config"
+local minimalist = require "testo.view.minimalist"
 local runner = {}
 runner.__index = runner
 
@@ -86,7 +86,7 @@ function runner:on_exit(opts)
     if handler == "notification" then
       minimalist.display(opts, self.results)
     elseif handler == "telescope" then
-      local telescope = require 'go2one.gotest.telescope'
+      local telescope = require 'testo.view.telescope'
       vim.schedule(
         function()
           telescope.display(opts, self:test_name(), self.results)

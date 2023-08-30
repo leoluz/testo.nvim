@@ -1,4 +1,4 @@
-local log = require "gotest.core.log"
+local log = require "testo.core.log"
 
 local M = {}
 
