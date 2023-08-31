@@ -8,7 +8,6 @@ local Status = {
   skip = "skip",
 }
 
-
 ---@class ExecutionResult represents the result of a test execution.
 ---@field [string] PackageResult The key is the package name
 
