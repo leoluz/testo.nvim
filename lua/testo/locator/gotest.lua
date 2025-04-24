@@ -17,7 +17,10 @@ local subtests_query = [[
     field: (field_identifier) @run)
   arguments: (argument_list
     (interpreted_string_literal) @testname
-    (func_literal))
+    [
+     (func_literal)
+     (identifier)
+    ])
   (#eq? @run "Run")) @parent
 ]]
 
@@ -77,42 +80,49 @@ end
 
 local function get_closest_test()
   local stop_row = vim.api.nvim_win_get_cursor(0)[1]
-  local ft = vim.api.nvim_buf_get_option(0, 'filetype')
-  assert(ft == 'go', 'can only find test in go files, not ' .. ft)
+  local ft = vim.api.nvim_get_option_value("filetype", { buf = 0 })
+  assert(ft == "go", "can only find test in go files, not " .. ft)
   local parser = vim.treesitter.get_parser(0)
+  if parser == nil then
+    error({ error_msg = "no treesitter parser available for the current buffer" })
+  end
   local root = (parser:parse()[1]):root()
 
   local test_tree = {}
 
   local test_query = vim.treesitter.query.parse(ft, tests_query)
-  assert(test_query, 'could not parse test query')
-  for _, match, _ in test_query:iter_matches(root, 0, 0, stop_row) do
+  assert(test_query, "could not parse test query")
+  for _, match, _ in test_query:iter_matches(root, 0, 0, stop_row, { all = true }) do
     local test_match = {}
-    for id, node in pairs(match) do
-      local capture = test_query.captures[id]
-      if capture == "testname" then
-        local name = vim.treesitter.get_node_text(node, 0)
-        test_match.name = name
-      end
-      if capture == "parent" then
-        test_match.node = node
+    for id, nodes in pairs(match) do
+      for _, node in ipairs(nodes) do
+        local capture = test_query.captures[id]
+        if capture == "testname" then
+          local name = vim.treesitter.get_node_text(node, 0)
+          test_match.name = name
+        end
+        if capture == "parent" then
+          test_match.node = node
+        end
       end
     end
     table.insert(test_tree, test_match)
   end
 
   local subtest_query = vim.treesitter.query.parse(ft, subtests_query)
-  assert(subtest_query, 'could not parse test query')
-  for _, match, _ in subtest_query:iter_matches(root, 0, 0, stop_row) do
+  assert(subtest_query, "could not parse test query")
+  for _, match, _ in subtest_query:iter_matches(root, 0, 0, stop_row, { all = true }) do
     local test_match = {}
-    for id, node in pairs(match) do
-      local capture = subtest_query.captures[id]
-      if capture == "testname" then
-        local name = vim.treesitter.get_node_text(node, 0)
-        test_match.name = string.gsub(string.gsub(name, ' ', '_'), '"', '')
-      end
-      if capture == "parent" then
-        test_match.node = node
+    for id, nodes in pairs(match) do
+      for _, node in ipairs(nodes) do
+        local capture = subtest_query.captures[id]
+        if capture == "testname" then
+          local name = vim.treesitter.get_node_text(node, 0)
+          test_match.name = string.gsub(string.gsub(name, " ", "_"), '"', "")
+        end
+        if capture == "parent" then
+          test_match.node = node
+        end
       end
     end
     table.insert(test_tree, test_match)
@@ -134,7 +144,7 @@ local function get_closest_test()
 end
 
 local function get_package_name()
-  local test_dir = vim.fn.fnamemodify(vim.fn.expand("%:.:h"), ":r");
+  local test_dir = vim.fn.fnamemodify(vim.fn.expand("%:.:h"), ":r")
   return "./" .. test_dir
 end
 
@@ -155,8 +165,8 @@ M.closest_test = function()
 end
 
 M.get_root_dir = function()
-  local id, client = next(vim.lsp.buf_get_clients())
-  if id == nil then
+  local id, client = next(vim.lsp.get_clients())
+  if id == nil or client == nil then
     error({ error_msg = "lsp client not attached" })
   end
   if not client.config.root_dir then
